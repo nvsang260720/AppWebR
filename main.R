@@ -41,7 +41,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dataset", tabName = "Dataset", icon = icon("dashboard")),
-      menuItem("Topgame", tabName = "Topgame", icon = icon("th"))
+      menuItem("Top Game", tabName = "Topgame", icon = icon("th"))
     )
   ),
   ## Body content
@@ -96,19 +96,23 @@ ui <- dashboardPage(
                        selectInput("Platform",
                                    "Platform:",
                                    c("All",
-                                     unique(as.character(df$Platform))))
+                                     unique(as.character(df$Platform)))
+                                   )
                 ),
                 column(4,
                        selectInput("Year_of_Release",
                                    "Year of Release:",
                                    c("All",
-                                     unique(as.character(df$Year_of_Release))))
+                                     sort(decreasing = TRUE,unique(as.character(df$Year_of_Release)))
+                                     )
+                                   )
                 ),
                 column(4,
                        selectInput("Genre",
                                    "Genre Game:",
                                    c("All",
-                                     unique(as.character(df$Genre))))
+                                     unique(as.character(df$Genre)))
+                                   )
                 ),
                 column(12,
                        DTOutput("table")   
@@ -126,18 +130,26 @@ ui <- dashboardPage(
                           solidHeader = TRUE, 
                           collapsible = TRUE,
                           width = ("null"),
-                          plotOutput("plot",
-                                      width = "100%",
-                                      height = "400px",
-                                      click = "plot_click",
-                                      dblclick = NULL,
-                                      hover = NULL,
-                                      brush = NULL,
-                                      inline = FALSE
-                                      
-                                    )
-                           )
-                       ) 
+                          div(
+                            selectInput("Years",
+                                        label = "Choose Sales Year",
+                                        c("All",
+                                          sort(decreasing = TRUE,unique(as.character(df$Year_of_Release)))
+                                        )
+                                        ),
+                            plotOutput("plot",
+                                        width = "100%",
+                                        height = "400px",
+                                        click = "plot_click",
+                                        dblclick = NULL,
+                                        hover = hoverOpts(id = "plot_hover", delayType = "throttle"),
+                                        brush = brushOpts(id = "plot_brush"),
+                                        inline = FALSE
+                                        
+                                      )
+                              )#end div
+                           )#end box
+                       ) # end colum 
               ) # end fluidRow
       ) #end tab item 
       
@@ -147,7 +159,7 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
   data <-reactive({
-    df %>% group_by(Platform) %>%  summarise(a_sum=sum(Other_Sales))
+    df %>%filter(Year_of_Release %in% input$Years) %>% group_by(Platform) %>%  summarise(a_sum=sum(Other_Sales))
   })
   output$plot <- renderPlot({
     g <- ggplot(data(), aes( y = a_sum, x = Platform))
