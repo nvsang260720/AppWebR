@@ -74,20 +74,23 @@ ui <- dashboardPage(
               fluidRow(
                 column(12,
                        box(
-                         div( id = ("contain"),
-                              div( id = ("title"),
-                                   h2(" Show data in table" , class = "h2-title")
-                              ),
-                              div( id = ("body"),
-                                   p("Filter information from data."),
-                                   p("We can search the game name through the information filter and the search bar.",
-                                     style = (""))
-                              )
+                         title = "Show data in table",
+                         status = "primary",
+                         solidHeader = TRUE, 
+                         collapsible = TRUE,
+                         style = (" color: White "),
+                         div( 
+                            div( 
+                                 p("Filter information from data."),
+                                 p("We can search the game name through the information filter and the search bar.",
+                                   style = (""))
+                            )
                          )
                        )   
                 )
               ),#end fluidRow
               fluidRow(
+                box( width = ("null"),
                 
                 column(4,
                        selectInput("Platform",
@@ -110,17 +113,32 @@ ui <- dashboardPage(
                 column(12,
                        DTOutput("table")   
                 )
+                )
               ), #end fluidRow
       ), #end tab item 
       # First tab content
       tabItem(tabName = "Topgame",
               fluidRow(
-                box(plotOutput("plot1", height = 250)),
-                box(
-                  title = "Controls",
-                  sliderInput("slider", "Number of observations:", 1, 100, 50)
-                )
-              )
+                column(12,
+                       box(
+                          title = "Top Sales in the world",
+                          status = "primary",
+                          solidHeader = TRUE, 
+                          collapsible = TRUE,
+                          width = ("null"),
+                          plotOutput("plot",
+                                      width = "100%",
+                                      height = "400px",
+                                      click = "plot_click",
+                                      dblclick = NULL,
+                                      hover = NULL,
+                                      brush = NULL,
+                                      inline = FALSE
+                                      
+                                    )
+                           )
+                       ) 
+              ) # end fluidRow
       ) #end tab item 
       
     )
@@ -128,6 +146,13 @@ ui <- dashboardPage(
 )
 
 server <- function(input, output, session) {
+  data <-reactive({
+    df %>% group_by(Platform) %>%  summarise(a_sum=sum(Other_Sales))
+  })
+  output$plot <- renderPlot({
+    g <- ggplot(data(), aes( y = a_sum, x = Platform))
+    g + geom_bar(stat = "sum")
+  })
   
   # Filter data based on selections
   output$table <- renderDT(DT::datatable(
