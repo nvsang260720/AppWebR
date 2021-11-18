@@ -35,6 +35,7 @@ df["Rating"] = NULL
 
 # Define UI
 ui <- fluidPage(theme = shinytheme("yeti"),
+      #custom css
       tags$head(
         tags$style(HTML("
             @import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap');
@@ -42,12 +43,20 @@ ui <- fluidPage(theme = shinytheme("yeti"),
               background-color: #ffff;
               color: white;
             }
-            h2 {
+            h2, h3, h4 {
               font-family: 'Yusei Magic', sans-serif;
+              color: #000000;
+            }
+            p {
+              color: #000000;
             }
             .shiny-input-container {
               color: #474747;
-            },
+            }
+            #h2test {
+              color:red;
+            }
+            
           ")
           )
       ),
@@ -56,16 +65,21 @@ ui <- fluidPage(theme = shinytheme("yeti"),
         tabPanel("Home",
            fluidRow(
              column(12,
-                h2(" Show data in table" , style = ("color:red")),
-             )
+              div( id = ("contain"),
+               div( id = ("title"),
+                    h2(" Show data in table" , id = "h2test")
+                  )
+                ,
+               div( id = ("body"),
+                    p("Filter information from data"),
+                    p("We can search the game name through the information filter and the search bar",
+                      style = (""))
+                  )
+                )
+              )
            ),
            fluidRow(
-             column(4,
-                    selectInput("Name",
-                                "Name:",
-                                c("All",
-                                  unique(as.character(df$Name))))
-             ),
+             
              column(4,
                     selectInput("Platform",
                                 "Platform:",
@@ -78,7 +92,12 @@ ui <- fluidPage(theme = shinytheme("yeti"),
                                 c("All",
                                   unique(as.character(df$Year_of_Release))))
              ),
-             
+             column(4,
+                    selectInput("Genre",
+                                "Genre Game:",
+                                c("All",
+                                  unique(as.character(df$Genre))))
+             ),
              DTOutput("table")
            ),
         ), # Navbar 1, tabPanel
@@ -100,7 +119,19 @@ ui <- fluidPage(theme = shinytheme("yeti"),
                  )
                  
                 ), #end tab panel
-        tabPanel("Navbar 3", "This panel is intentionally left blank")
+        tabPanel("Navbar 3", 
+                 sidebarLayout(
+                   
+                   # Sidebar with a slider input
+                   sidebarPanel(
+                     
+                   ),
+                   
+                   # Show a plot of the generated distribution
+                   mainPanel(
+                     
+                   )
+                 ))
         
       ) # navbarPage
 ) # fluidPage
@@ -130,14 +161,14 @@ server <- function(input, output, session) {
     class = 'cell-border strip hover',
     {
     data <- df
-    if (input$Name != "All") {
-      data <- data[data$Name == input$Name,]
-    }
     if (input$Platform != "All") {
       data <- data[data$Platform == input$Platform,]
     }
     if (input$Year_of_Release != "All") {
       data <- data[data$Year_of_Release == input$Year_of_Release,]
+    }
+    if (input$Genre != "All") {
+      data <- data[data$Genre == input$Genre,]
     }
     
     data
