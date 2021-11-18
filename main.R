@@ -34,9 +34,12 @@ df[["total_Critic"]] = df[["Critic_Score"]] + df[["User_Score"]]
 df["Rating"] = NULL
 
 
-ui <- dashboardPage(
+ui <- dashboardPage(skin = "black",
   
-  dashboardHeader(title = "Game Statistics"),
+  dashboardHeader(
+    title = "Game Statistics"
+                  
+                  ),
   ## Sidebar content
   dashboardSidebar(
     sidebarMenu(
@@ -55,7 +58,7 @@ ui <- dashboardPage(
             }
             h2, h3, h4 {
               font-family: 'Yusei Magic', sans-serif;
-              color: #000000;
+              color: #ffff;
             }
             p {
               color: #000000;
@@ -75,7 +78,7 @@ ui <- dashboardPage(
                 column(12,
                        box(
                          title = "Show data in table",
-                         status = "primary",
+                         status = "info",
                          solidHeader = TRUE, 
                          collapsible = TRUE,
                          style = (" color: White "),
@@ -98,7 +101,7 @@ ui <- dashboardPage(
                                    c("All",
                                      unique(as.character(df$Platform)))
                                    )
-                ),
+                  ),
                 column(4,
                        selectInput("Year_of_Release",
                                    "Year of Release:",
@@ -113,11 +116,11 @@ ui <- dashboardPage(
                                    c("All",
                                      unique(as.character(df$Genre)))
                                    )
-                ),
+                  ),
                 column(12,
                        DTOutput("table")   
-                )
-                )
+                  )
+                )#end box
               ), #end fluidRow
       ), #end tab item 
       # First tab content
@@ -126,7 +129,7 @@ ui <- dashboardPage(
                 column(12,
                        box(
                           title = "Top Sales in the world",
-                          status = "primary",
+                          status = "info",
                           solidHeader = TRUE, 
                           collapsible = TRUE,
                           width = ("null"),
@@ -136,7 +139,7 @@ ui <- dashboardPage(
                                         c("All",
                                           sort(decreasing = TRUE,unique(as.character(df$Year_of_Release)))
                                         )
-                                        ),
+                                      ),
                             plotOutput("plot",
                                         width = "100%",
                                         height = "400px",
@@ -153,15 +156,22 @@ ui <- dashboardPage(
               ) # end fluidRow
       ) #end tab item 
       
-    )
-  )
-)
+    )#end dashboardBody
+  )#end dashboardPage
+)#end ui
 
 server <- function(input, output, session) {
-  data <-reactive({
-    df %>%filter(Year_of_Release %in% input$Years) %>% group_by(Platform) %>%  summarise(a_sum=sum(Other_Sales))
-  })
+  
   output$plot <- renderPlot({
+    if (input$Years != "All") {
+      data <-reactive({
+        df %>%filter(Year_of_Release %in% input$Years) %>% group_by(Platform) %>%  summarise(a_sum=sum(Other_Sales))
+      })
+    }else{
+      data <-reactive({
+        df %>% group_by(Platform) %>%  summarise(a_sum=sum(Other_Sales))
+      })
+    }
     g <- ggplot(data(), aes( y = a_sum, x = Platform))
     g + geom_bar(stat = "sum")
   })
@@ -194,6 +204,6 @@ server <- function(input, output, session) {
     })
     
   )
-} # server
+} # end server
 
 shinyApp(ui, server)
