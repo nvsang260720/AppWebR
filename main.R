@@ -5,6 +5,8 @@ library(DT)
 library(shiny)
 library(shinythemes)
 library(shinydashboard)
+library(fontawesome)
+library(devtools) 
 
 setwd("E://r_rstudio//AppWeb")
 df <- read.csv("dataset/video_game.csv")
@@ -133,7 +135,7 @@ ui <- dashboardPage(skin = "black",
                           solidHeader = TRUE, 
                           collapsible = TRUE,
                           width = ("null"),
-                          div(
+                          div( 
                             selectInput("Years",
                                         label = "Choose Sales Year",
                                         c("All",
@@ -152,8 +154,29 @@ ui <- dashboardPage(skin = "black",
                                       )
                               )#end div
                            )#end box
-                       ) # end colum 
-              ) # end fluidRow
+                       )# end colum
+                ), #end fluidRow
+                fluidRow(
+                  column(12,
+                         box(
+                           title = "Top Genre in the world",
+                           status = "info",
+                           solidHeader = TRUE, 
+                           collapsible = TRUE,
+                           div(
+                              plotOutput("Plot_1",
+                                         width = "100%",
+                                         height = "400px",
+                                         click = "plot_click",
+                                         dblclick = NULL,
+                                         hover = hoverOpts(id = "plot_hover", delayType = "throttle"),
+                                         brush = brushOpts(id = "plot_brush"),
+                                         inline = FALSE
+                                         )
+                           )#end div
+                         )#end box
+                      )#end colum
+                ) # end fluidRow
       ) #end tab item 
       
     )#end dashboardBody
@@ -161,19 +184,39 @@ ui <- dashboardPage(skin = "black",
 )#end ui
 
 server <- function(input, output, session) {
-  
+  output$Plot_1 <- renderPlot({
+    df2 <- df %>% group_by(Genre) %>%  summarise(Sales=sum(total_Critic))
+    
+    df3 = c(unique(as.character(df2$Sales)))
+    title= c(unique(as.character(df2$Genre)))
+    pct <- round(as.numeric(df3)/sum(as.numeric(df3))*100)
+
+    lbls <- paste(pct) # add percents to labels
+    lbls <- paste(lbls,"%",sep="") # ad % to labels
+    # Render a barplot
+    pie(pct, 
+        main="Years (1976-2017)",
+        col=rainbow(12),
+        labels = lbls)
+    legend("topright", title , cex=0.8,fill=rainbow(length(pct)))
+  })
+
+  output$nthValue <- renderText({ "hello" })
   output$plot <- renderPlot({
     if (input$Years != "All") {
       data <-reactive({
-        df %>%filter(Year_of_Release %in% input$Years) %>% group_by(Platform) %>%  summarise(a_sum=sum(Other_Sales))
+        df %>%filter(Year_of_Release %in% input$Years) %>% group_by(Platform) %>%  summarise(Sales=sum(Global_Sales))
       })
     }else{
       data <-reactive({
-        df %>% group_by(Platform) %>%  summarise(a_sum=sum(Other_Sales))
+        df %>% group_by(Platform) %>%  summarise(Sales=sum(Global_Sales))
       })
     }
-    g <- ggplot(data(), aes( y = a_sum, x = Platform))
-    g + geom_bar(stat = "sum")
+
+    color <- c("blue", "red")
+    
+    g <- ggplot(data(), aes( y = Sales, x = Platform, fill = "Global Sales"), col=color)
+    g + geom_bar(stat = "identity")
   })
   
   # Filter data based on selections
