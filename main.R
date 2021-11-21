@@ -94,8 +94,7 @@ ui = dashboardPage(skin = "black",
                    with =4,
                    title = "Show data in table",
                    status = "info",
-                   solidHeader = TRUE, 
-                   collapsible = TRUE,
+                   solidHeader = TRUE,
                    div( 
                       div( 
                            p("Filter information from data."),
@@ -284,7 +283,7 @@ server = function(input, output, session) {
     pct = round(as.numeric(df3)/sum(as.numeric(df3))*100)
 
     lbls = paste(pct) # add percents to labels
-    lbls = paste(lbls,"%",sep="") # ad % to labels
+    lbls = paste(lbls,"%",sep="") # ad % to labels test pull
     # Render a barplot
     pie(pct, 
         main="Years (1976-2017)",
