@@ -6,7 +6,9 @@ library(shiny)
 library(shinythemes)
 library(shinydashboard)
 library(fontawesome)
-library(devtools) 
+library(devtools)
+library(grapher)
+library(plotly)
 
 setwd("E://r_rstudio//AppWeb")
 df <- read.csv("dataset/video_game.csv")
@@ -46,7 +48,8 @@ ui = dashboardPage(skin = "black",
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dataset", tabName = "Dataset", icon = icon("dashboard")),
-      menuItem("Top Game", tabName = "Topgame", icon = icon("th"))
+      menuItem("Top Game", tabName = "Topgame", icon = icon("th")),
+      menuItem("Model", tabName = "Model", icon = icon("th"))
     )
   ),
   ## Body content
@@ -79,6 +82,7 @@ ui = dashboardPage(skin = "black",
                   border-right-color:#666666;
                   border-top-color:#666666;
             }
+            
             
             
           ")
@@ -135,13 +139,29 @@ ui = dashboardPage(skin = "black",
                 )#end box
               ), #end fluidRow
       ), #end tab item 
+      tabItem(tabName = "Model",
+              fluidRow(
+                box(
+                  title = "Predict the number of EU end JPAN game sales to the world",
+                  status = "info",
+                  solidHeader = TRUE, 
+                  collapsible = TRUE,
+                  width = 12,
+                  div( 
+                    plotOutput("model"),
+                    plotOutput("model1")
+                    
+                  )#end div
+                )#end box
+              ),#end fluidRow
+      ), #end tab item 
       # First tab content
       tabItem(tabName = "Topgame",
               fluidRow(
                 box(width = 3,
                     class = (""),
                     title = "Number Games",
-                    status = "success", 
+                    status = "info", 
                     solidHeader = TRUE,
                     div(
                       span(textOutput("text_name"))
@@ -161,8 +181,9 @@ ui = dashboardPage(skin = "black",
                 box(width = 3,
                     class = (""),
                     title = "Number Genre",
-                    status = "warning", 
+                    status = "info", 
                     solidHeader = TRUE,
+                    size= 18,
                     div(
                       span(textOutput("text_genre"))
                       
@@ -171,7 +192,7 @@ ui = dashboardPage(skin = "black",
                 box(width = 3,
                     class = (""),
                     title = "Number Publisher",
-                    status = "danger", 
+                    status = "info", 
                     solidHeader = TRUE,
                     div(
                       span(textOutput("text_publisher"))
@@ -225,8 +246,40 @@ ui = dashboardPage(skin = "black",
                       
                      )#end div
                    )#end column
+                ),#end box
+                box(
+                  title = "Top 20 Grossing Games In the world",
+                  status = "info",
+                  solidHeader = TRUE, 
+                  collapsible = TRUE,
+                  column(12,
+                         div(
+                           
+                           plotOutput("plot_top20",
+                                      width = "100%",
+                                      height = "400px",
+                                      click = "plot_click",
+                                      dblclick = NULL,
+                                      inline = FALSE
+                           ),
+                           
+                         )#end div
+                  )#end column
                 )#end box
-                ) # end fluidRow
+                ), # end fluidRow
+              fluidRow(
+                box(
+                  title = "Top 10 games voted by users in the world",
+                  status = "info",
+                  solidHeader = TRUE, 
+                  collapsible = TRUE,
+                  width = 12,
+                  div( 
+                   plotOutput("trendPlot")
+                   
+                  )#end div
+                )#end box
+              ), #end fluidRow
       ) #end tab item 
       
     )#end dashboardBody
@@ -249,12 +302,8 @@ server = function(input, output, session) {
   leng_genre = round(as.numeric(length(select_genre)))
   leng_publisher = round(as.numeric(length(select_publisher)))
   
-
-  data2 = na.omit(group_name)
-  #df6 = data2[order(data2$Sales, decreasing = TRUE)]
   
-  print(data2)
-
+  
   output$text_name = renderText(
     { 
       leng_name
@@ -275,7 +324,47 @@ server = function(input, output, session) {
       leng_publisher
     }
   )
+  output$model = renderPlot({
+    plot(
+      df$Global_Sales ~ df$EU_Sales,
+      data = df,
+      xlab="Global Sales (million dollar)",
+      ylab="EU Sales (million dollar)"
+      )
+    model <- lm(df$Global_Sales ~ df$EU_Sales, data = df)
+    abline(model, col="red")
+    summary(model)
+  })
+  output$model1 = renderPlot({
+    plot(
+      df$Global_Sales ~ df$JP_Sales,
+      data = df,
+      xlab="Global Sales (million dollar)",
+      ylab="JPAN Sales (million dollar)"
+    )
+    model <- lm(df$Global_Sales ~ df$JP_Sales, data = df)
+    abline(model, col="red")
+    summary(model)
+  })
+ 
+  #bieu do duong
+  output$trendPlot=renderPlot({
+    data = group_by(df, Name) %>% summarise(totalRating = max(total_Critic)) %>% arrange(desc(totalRating)) %>% top_n(10)
+    ggplot(data, aes(x=Name, y=totalRating, label=totalRating)) + 
+      geom_point(stat='identity', fill="#99CCFF", size=12)  +
+      geom_segment(aes(y = 0, 
+                       x = Name, 
+                       yend = totalRating, 
+                       xend = Name), 
+                   color = "black") +
+      geom_text(color="white", size=3) +
+      labs(title="Voted By Rsers", 
+           subtitle="Top 10 games voted by users in the world") + 
+      ylim(0, 110) +
+      coord_flip()
+  })
   
+  #bieu do tron
   output$Plot_1 = renderPlot({
     df2 = df %>% group_by(Genre) %>%  summarise(Sales=sum(total_Critic))
     df3 = c(unique(as.character(df2$Sales)))
@@ -288,24 +377,54 @@ server = function(input, output, session) {
     pie(pct, 
         main="Years (1976-2017)",
         col=rainbow(12),
-        labels = lbls)
+        labels = lbls)+
+        theme_bw(base_size = 16)
     legend("topright", title , cex=1,fill=rainbow(length(pct)))
   })
+  
+  #bieu do cot
   output$plot = renderPlot({
+    
     if (input$Years != "All") {
       data = reactive({
         df %>%filter(Year_of_Release %in% input$Years) %>% group_by(Platform) %>%  summarise(Sales=sum(Global_Sales))
       })
+      lable = df %>%filter(Year_of_Release %in% input$Years) %>% group_by(Platform) %>%  summarise(Sales=sum(Global_Sales))
+      label_colum = c(unique(as.numeric(lable$Sales)))
+      #print(label_colum)
     }else{
       data = reactive({
         df %>% group_by(Platform) %>%  summarise(Sales=sum(Global_Sales))
       })
+      lable = df %>% group_by(Platform) %>%  summarise(Sales=sum(Global_Sales))
+      label_colum = c(unique(as.numeric(lable$Sales)))
+      #print(label_colum)
+      
     }
 
     color = c("blue", "red")
     
-    g = ggplot(data(), aes( y = Sales, x = Platform, fill = "Global Sales"), col=color)
-    g + geom_bar(stat = "identity")
+    ggplot(data(), aes( y = Sales , x = Platform, fill = Platform), col=color)+
+      geom_bar(stat = "identity",width=.8)+ 
+      geom_text(aes(label = label_colum), vjust = -0.5, colour = "black")+
+      xlab("All Platform")+
+      ylab("Sales(million dollar)")+
+      theme(axis.text.x = element_text(angle=65, vjust=0.6))
+  })
+  #bieu do top 20
+  output$plot_top20 <- renderPlot({
+    brands = group_by(df, Name) %>% summarise(avgRating = sum(Global_Sales)) %>% arrange(desc(avgRating)) %>% top_n(20)
+    #print(brands)
+    
+    # Bar chart
+    ggplot(brands, aes(reorder(Name, avgRating))) +
+      geom_bar(aes(weight = avgRating), fill = "tomato3") +
+      coord_flip() +
+      ggtitle("Top 20 Grossing Games In the world") +
+      xlab("Name Game") +
+      ylab("Sales(million dollar)") +
+      theme_bw(base_size = 16)
+      
   })
   
   # Filter data based on selections
